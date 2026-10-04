@@ -344,7 +344,7 @@
     else if (mode === 'swap') $('action-hint').textContent = '换位以其他友军头像为终点，沿整段路径逐格交换位置，每次交换仅移动者消耗1点移动力。空格路段按地形计费，其他单位的移动力和行动次数不变；敌我不能换位或跨越。';
     else if (u.acted) $('action-hint').textContent = `本回合攻击 / 技能次数已用尽。剩余普通移动力：${u.moveLeft}点。`;
     else if (mode === 'attack') $('action-hint').textContent = `基础${u.damage === 'magic' ? '魔法' : '物理'}伤害${u.atk}点，射程${u.range}格，扣除对应防御后，伤害在80%—120%之间浮动。货箱阻挡射线。`;
-    else if (SKILLS[mode]) $('action-hint').textContent = SKILLS[mode].desc + (['ally', 'self', 'unit'].includes(SKILLS[mode].type) ? ' 选择友军技能目标时点击其所在格的空白处；点击头像切换操控单位。' : '');
+    else if (SKILLS[mode]) $('action-hint').textContent = SKILLS[mode].desc + (['ally', 'self', 'unit'].includes(SKILLS[mode].type) ? ' 点击有效目标的头像或所在地格选取技能目标；顶部角色卡始终用于切换操控单位。' : '');
     else $('action-hint').textContent = '每回合一次普攻、技能或登艇。';
     $('preview').textContent = mode === 'swap' ? '预览可换位的友军：显示沿途各单位的新位置及移动力消耗。' : mode === 'move' ? '预览可移动的空格：显示路径与移动力消耗；沿途友军位置不变。' : mode === 'teleport' && teleportTarget ? `传送目标：${game.get(teleportTarget).name}。紫色地格为落点范围，金色边框为空闲有效落点；选取目标阶段未消耗行动或冷却。` : '紫色地格：行动范围；金色边框：有效目标；粉色虚线：火球溅射区域。选中技能后可直接点击有效单位头像选目标；顶部角色卡始终用于切换操控单位。';
     if (u.regenRemaining > 0) {
