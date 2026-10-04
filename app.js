@@ -259,12 +259,13 @@
       for (const [px, py] of p.path) { const cell = document.querySelector(`.cell[data-x="${px}"][data-y="${py}"]`); if (cell) cell.classList.add('path'); }
       $('preview').textContent = `${movementPreview(u, p)}${game.fire.has(key(x, y)) ? '\n回合末火场伤害4—6点。' : ''}${game.warn.some(w => w.x === x && w.y === y) ? `\n本回合末炮击伤害${formatDamage(BOMBARDMENT.damage)}点。` : ''}`;
     } else if (u && t && p) $('preview').textContent = game.preview(u, t, mode);
-    else if (!p) $('preview').textContent = `${tileNames[game.tile(x, y)]}。${t ? `${t.name} · 生命${t.hp}/${t.maxHp}。` : ''}${mode === 'swap' ? t && t.team === 'ally' && t.id !== selected ? '当前移动力不足或路径被阻挡，无法换位。' : '换位终点必须为其他友军头像。' : t && t.team === 'ally' ? '点击头像切换操控单位。' : ''}${game.warn.some(w => w.x === x && w.y === y) ? '本回合敌方行动结束后炮击。' : ''}`;
+    else if (!p) $('preview').textContent = `${tileNames[game.tile(x, y)]}。${t ? `${t.name} · 生命${t.hp}/${t.maxHp}。` : ''}${mode === 'swap' ? t && t.team === 'ally' && t.id !== selected ? '当前移动力不足或路径被阻挡，无法换位。' : '换位终点必须为其他友军头像。' : SKILLS[mode] ? '该地格不是当前技能的有效目标。' : t && t.team === 'ally' ? '点击头像切换操控单位。' : ''}${game.warn.some(w => w.x === x && w.y === y) ? '本回合敌方行动结束后炮击。' : ''}`;
   }
   function clickTile(x, y, unitClicked = false) {
     if (busy || !started || game.status !== 'playing') return;
     const t = game.at(x, y), u = game.get(selected);
-    if (unitClicked && t && t.team === 'ally' && (mode !== 'swap' || t.id === selected)) { pick(t.id); return; }
+    const choosingSkill = !!SKILLS[mode];
+    if (unitClicked && t && t.team === 'ally' && !choosingSkill && (mode !== 'swap' || t.id === selected)) { pick(t.id); return; }
     if (mode === 'swap') {
       if (unitClicked && t && t.team === 'ally') {
         const p = moveTiles().find(p => p.x === x && p.y === y);
@@ -288,7 +289,11 @@
       else { inspected = null; hover = null; playerPlayback(() => { const actor = game.get(selected); if (game.pending(actor)) mode = game.canUse(actor) ? 'attack' : 'move'; else nextActor(); }); }
       return;
     }
-    if (t && t.team === 'ally') { pick(t.id); return; }
+    if (t && t.team === 'ally') {
+      if (!choosingSkill) { pick(t.id); return; }
+      inspected = { x, y, id: t.id }; render(); updateHover(x, y);
+      toast('该单位不是当前技能的有效目标，或超出射程、被货箱遮挡。'); return;
+    }
     inspected = { x, y, id: t ? t.id : null }; render();
     if (mode && mode !== 'move' && t && t.team === 'enemy' && !isTarget && game.canUse(u)) toast(t.stealthed ? '目标处于潜行，无法被普攻或技能选中。' : '目标不在当前范围内，或被货箱遮挡。');
   }
@@ -341,7 +346,7 @@
     else if (mode === 'attack') $('action-hint').textContent = `基础${u.damage === 'magic' ? '魔法' : '物理'}伤害${u.atk}点，射程${u.range}格，扣除对应防御后，伤害在80%—120%之间浮动。货箱阻挡射线。`;
     else if (SKILLS[mode]) $('action-hint').textContent = SKILLS[mode].desc + (['ally', 'self', 'unit'].includes(SKILLS[mode].type) ? ' 选择友军技能目标时点击其所在格的空白处；点击头像切换操控单位。' : '');
     else $('action-hint').textContent = '每回合一次普攻、技能或登艇。';
-    $('preview').textContent = mode === 'swap' ? '预览可换位的友军：显示沿途各单位的新位置及移动力消耗。' : mode === 'move' ? '预览可移动的空格：显示路径与移动力消耗；沿途友军位置不变。' : mode === 'teleport' && teleportTarget ? `传送目标：${game.get(teleportTarget).name}。紫色地格为落点范围，金色边框为空闲有效落点；选取目标阶段未消耗行动或冷却。` : '紫色地格：行动范围；金色边框：有效目标；粉色虚线：火球溅射区域。友方技能选择目标地格生效，点击友军头像则切换操控单位。';
+    $('preview').textContent = mode === 'swap' ? '预览可换位的友军：显示沿途各单位的新位置及移动力消耗。' : mode === 'move' ? '预览可移动的空格：显示路径与移动力消耗；沿途友军位置不变。' : mode === 'teleport' && teleportTarget ? `传送目标：${game.get(teleportTarget).name}。紫色地格为落点范围，金色边框为空闲有效落点；选取目标阶段未消耗行动或冷却。` : '紫色地格：行动范围；金色边框：有效目标；粉色虚线：火球溅射区域。选中技能后可直接点击有效单位头像选目标；顶部角色卡始终用于切换操控单位。';
     if (u.regenRemaining > 0) {
       const buff = document.createElement('div'); buff.className = 'buff-summary'; buff.textContent = `再生：剩余${u.regenRemaining}次我方回合结束，各回复8`; info.append(buff);
     }
@@ -391,6 +396,7 @@
         ].filter(Boolean).join('；'); panel.append(statuses);
       }
       if (t.team === 'enemy') {
+        const balance = document.createElement('div'); balance.className = 'target-metrics'; balance.textContent = '敌方伤害结算后再降低10%并四舍五入，再按80%—120%浮动（最低1点）；包含普攻、技能与潜行增伤。'; panel.append(balance);
         for (const id of t.skills) {
           const s = ENEMY_SKILLS[id], cd = Math.max(0, (t.cooldowns[id] || 0) - game.round);
           const skill = document.createElement('div'); skill.className = 'enemy-skill'; skill.textContent = `${s.name} · ${s.spawnOnly ? t.stealthed ? '生效中' : '已结束' : cd ? `冷却${cd}回合` : '可用'}：${s.desc}`; panel.append(skill);
@@ -454,7 +460,7 @@
   }
   function exportRecord() {
     const r = game.result(); const names = Object.fromEntries(Object.entries(SKILLS).map(([id, s]) => [id, s.name]));
-    const text = [`船坞脱困 · 原型试玩记录`, `记录时间：${new Date().toLocaleString('zh-CN')}`, `版本：0.15　战斗种子：${r.seed}`, `状态：${{ playing: '进行中', won: '撤离成功', lost: '撤离失败' }[r.outcome]}`, `回合：${r.round}/${LIMIT}　撤离：${r.evacuated}/3　击败敌人：${r.kills}/5`, `实际耗时：${r.elapsedSeconds}秒（包含思考与停留）`, `队伍承受伤害：${r.damageTaken}　普通攻击：${r.attacks}次`, `中央路径格数：${r.routes.center}　上侧路径格数：${r.routes.upper}　下侧路径格数：${r.routes.lower}`, `技能使用：${Object.entries(r.skills).map(([id, n]) => `${names[id]} ${n}次`).join('；') || '暂无'}`, `隐藏成就：${r.cleanSweep ? '已达成' : '未达成'}`, '', '——行动记录——', ...r.history.map(e => `[回合${e.round}] ${e.text}`)].join('\n');
+    const text = [`船坞脱困 · 原型试玩记录`, `记录时间：${new Date().toLocaleString('zh-CN')}`, `版本：0.16　战斗种子：${r.seed}`, `状态：${{ playing: '进行中', won: '撤离成功', lost: '撤离失败' }[r.outcome]}`, `回合：${r.round}/${LIMIT}　撤离：${r.evacuated}/3　击败敌人：${r.kills}/5`, `实际耗时：${r.elapsedSeconds}秒（包含思考与停留）`, `队伍承受伤害：${r.damageTaken}　普通攻击：${r.attacks}次`, `中央路径格数：${r.routes.center}　上侧路径格数：${r.routes.upper}　下侧路径格数：${r.routes.lower}`, `技能使用：${Object.entries(r.skills).map(([id, n]) => `${names[id]} ${n}次`).join('；') || '暂无'}`, `隐藏成就：${r.cleanSweep ? '已达成' : '未达成'}`, '', '——行动记录——', ...r.history.map(e => `[回合${e.round}] ${e.text}`)].join('\n');
     const blob = new Blob(['\uFEFF', text], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `船坞脱困_试玩记录_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   $('start-button').addEventListener('click', () => { $('intro-dialog').close(); if (!started) { started = true; game.stats.started = Date.now(); } render(); });

@@ -218,6 +218,11 @@
       const bonus = this.boost.has(key(a.x, a.y)) && !this.fire.has(key(a.x, a.y)) ? 2 : 0;
       return Math.max(1, base + bonus - (ignore ? 0 : this.defense(t, type)));
     }
+    enemyDamage(a, t, base, multiplier = 1, bonus = a.ambushBonus || 0) {
+      // Apply the balance reduction to the complete nominal hit, including ambush and cover.
+      const previous = Math.max(1, Math.ceil((this.damage(a, t, base, 'physical') + bonus) * multiplier));
+      return Math.max(1, Math.round(previous * .9));
+    }
     rollDamage(value) {
       const { min, max } = damageBounds(value);
       return min + Math.floor(this.random() * (max - min + 1));
@@ -415,7 +420,7 @@
       const recipient = protectedTarget ? guard : target, multiplier = protectedTarget ? .55 : 1;
       const actor = { ...e, x: pos.x, y: pos.y };
       return options.filter(a => (!a.skill || this.enemyReady(e, a.skill)) && this.inRange(pos, target, a.range)).map(a => ({
-        ...a, damage: expectedDamage(Math.max(1, Math.ceil((this.damage(actor, recipient, a.base, 'physical') + (e.ambushBonus || 0)) * multiplier)), recipient.hp)
+        ...a, damage: expectedDamage(this.enemyDamage(actor, recipient, a.base, multiplier), recipient.hp)
       })).sort((a, b) => b.damage - a.damage || Number(!!b.skill) - Number(!!a.skill))[0];
     }
     attackDistanceField(e, target, range) {
@@ -498,7 +503,7 @@
           this.fx('status', { id, x: e.x, y: e.y, value: '伤害+4', label: '追击者 · 潜行攻击' });
           this.log('追击者消耗潜行增伤，本次伤害额外增加4点。', 'skill');
         }
-        this.hurt(target, Math.max(1, Math.ceil((this.damage(e, target, base, 'physical') + bonus) * recipient.multiplier)), label);
+        this.hurt(target, this.enemyDamage(e, target, base, recipient.multiplier, bonus), label);
         if (skill) e.cooldowns[skill] = this.round + ENEMY_SKILLS[skill].cd;
         if (target.hp > 0 && (skill === 'pin' || skill === 'hook' || skill === 'hamstring')) {
           target.slow = true;
