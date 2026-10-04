@@ -441,7 +441,7 @@
       game.enemyAct(e.id); await playEffects(game.takeEffects()); render();
     }
     game.finishRound(); await playEffects(game.takeEffects()); busy = false; nextActor(); render(); checkResult();
-    if (game.round === 3 && game.status === 'playing') toast('岸防炮启动。预告落点将在本回合敌方阶段结束后受到炮击。');
+    if (game.round === 3 && game.status === 'playing') toast('岸防炮启动：第3、5、7回合炮击。预告落点将在本回合敌方阶段结束后受到炮击。');
   }
   function checkResult() {
     if (game.status === 'playing' || $('result-dialog').open) return;
@@ -460,7 +460,7 @@
   }
   function exportRecord() {
     const r = game.result(); const names = Object.fromEntries(Object.entries(SKILLS).map(([id, s]) => [id, s.name]));
-    const text = [`船坞脱困 · 原型试玩记录`, `记录时间：${new Date().toLocaleString('zh-CN')}`, `版本：0.16　战斗种子：${r.seed}`, `状态：${{ playing: '进行中', won: '撤离成功', lost: '撤离失败' }[r.outcome]}`, `回合：${r.round}/${LIMIT}　撤离：${r.evacuated}/3　击败敌人：${r.kills}/5`, `实际耗时：${r.elapsedSeconds}秒（包含思考与停留）`, `队伍承受伤害：${r.damageTaken}　普通攻击：${r.attacks}次`, `中央路径格数：${r.routes.center}　上侧路径格数：${r.routes.upper}　下侧路径格数：${r.routes.lower}`, `技能使用：${Object.entries(r.skills).map(([id, n]) => `${names[id]} ${n}次`).join('；') || '暂无'}`, `隐藏成就：${r.cleanSweep ? '已达成' : '未达成'}`, '', '——行动记录——', ...r.history.map(e => `[回合${e.round}] ${e.text}`)].join('\n');
+    const text = [`船坞脱困 · 原型试玩记录`, `记录时间：${new Date().toLocaleString('zh-CN')}`, `版本：0.17　战斗种子：${r.seed}`, `状态：${{ playing: '进行中', won: '撤离成功', lost: '撤离失败' }[r.outcome]}`, `回合：${r.round}/${LIMIT}　撤离：${r.evacuated}/3　击败敌人：${r.kills}/5`, `实际耗时：${r.elapsedSeconds}秒（包含思考与停留）`, `队伍承受伤害：${r.damageTaken}　普通攻击：${r.attacks}次`, `中央路径格数：${r.routes.center}　上侧路径格数：${r.routes.upper}　下侧路径格数：${r.routes.lower}`, `技能使用：${Object.entries(r.skills).map(([id, n]) => `${names[id]} ${n}次`).join('；') || '暂无'}`, `隐藏成就：${r.cleanSweep ? '已达成' : '未达成'}`, '', '——行动记录——', ...r.history.map(e => `[回合${e.round}] ${e.text}`)].join('\n');
     const blob = new Blob(['\uFEFF', text], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `船坞脱困_试玩记录_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   $('start-button').addEventListener('click', () => { $('intro-dialog').close(); if (!started) { started = true; game.stats.started = Date.now(); } render(); });

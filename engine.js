@@ -45,7 +45,7 @@
     stealth: { name: '潜行', spawnOnly: true, desc: '登场时施放一次，持续至下一回合结束。期间无法被普攻或技能选中，只受环境和溅射伤害；期间首次造成伤害额外增加4点。' },
     hamstring: { name: '割筋', range: 1, cd: 3, desc: '相邻目标受到10点基础物理伤害，下回合移动力降低1点。' },
   };
-  const BOMBARDMENT = { start: 3, damage: 8, radius: 2, maxTargets: 4, fireDuration: 3 };
+  const BOMBARDMENT = { start: 3, interval: 2, damage: 8, radius: 2, maxTargets: 4, fireDuration: 3 };
   const FIRE_DAMAGE = 5;
   const INITIAL_FIRE = [[5, 1], [5, 2], [5, 6]];
   const LIMIT = 8;
@@ -98,7 +98,8 @@
       return result;
     }
     bombardmentTargets() {
-      const heroes = this.active('ally'); if (this.round < BOMBARDMENT.start || !heroes.length) return [];
+      const heroes = this.active('ally');
+      if (this.round < BOMBARDMENT.start || (this.round - BOMBARDMENT.start) % BOMBARDMENT.interval !== 0 || !heroes.length) return [];
       const count = Math.min(BOMBARDMENT.maxTargets, heroes.length + 1), result = [], marked = new Set();
       // Never telegraph every reachable landing tile of an active hero.
       const escapes = heroes.map(h => this.reach(h));
@@ -560,7 +561,7 @@
         u.moveLeft = this.speed(u); u.moved = false; u.acted = false; u.ended = false;
       }
       this.warn = this.bombardmentTargets();
-      if (this.round === 3) this.log('局势变化：岸防炮启动。本回合敌方行动结束后轰炸预告落点。', 'event');
+      if (this.round === BOMBARDMENT.start) this.log('局势变化：岸防炮启动，每2回合炮击一次（第3、5、7回合）。本回合敌方行动结束后轰炸预告落点。', 'event');
       if (this.warn.length) this.log(`第${this.round}回合炮击预告：${this.warn.map(p => `${p.x + 1}列${p.y + 1}行`).join('、')}。本回合敌方阶段结束后落地。`, 'danger');
       this.log(`第${this.round}回合 · 我方阶段。`);
     }
