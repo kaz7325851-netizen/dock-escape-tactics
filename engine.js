@@ -172,9 +172,15 @@
     }
     lineOfSight(a, b) {
       let x = a.x, y = a.y; const dx = Math.abs(b.x - x), dy = Math.abs(b.y - y);
-      const sx = x < b.x ? 1 : -1, sy = y < b.y ? 1 : -1; let err = dx - dy;
+      const sx = Math.sign(b.x - x), sy = Math.sign(b.y - y);
+      let crossedX = 0, crossedY = 0;
+      // Traverse every cell crossed by the center-to-center segment. Compare the
+      // next grid-boundary times using integers so reversing the ray is identical.
+      // An exact corner touch has no interior overlap: enter the diagonal cell.
       while (x !== b.x || y !== b.y) {
-        const e = 2 * err; if (e > -dy) { err -= dy; x += sx; } if (e < dx) { err += dx; y += sy; }
+        const nextX = (2 * crossedX + 1) * dy, nextY = (2 * crossedY + 1) * dx;
+        if (nextX <= nextY) { x += sx; crossedX++; }
+        if (nextY <= nextX) { y += sy; crossedY++; }
         if (x === b.x && y === b.y) return true;
         if (!this.walkable(x, y)) return false;
       }
