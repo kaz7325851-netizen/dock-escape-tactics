@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>船坞脱困 · 战棋关卡原型</title>
+  <link rel="stylesheet" href="style.css?v=0.15">
+  <script src="engine.js?v=0.15" defer></script>
+  <script src="app.js?v=0.15" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">◈</span><div><div class="eyebrow">撤离行动 / 战术原型 0.15</div><h1>船坞脱困</h1></div></div>
+      <div class="mission"><span class="objective-label">任务目标</span><strong>三名队员全部登艇</strong><span id="objective-progress">已撤离 0 / 3</span></div>
+      <div class="top-actions"><button id="help-button" class="quiet rules-entry">详细规则</button><button id="restart-button" class="quiet">重新开始</button></div>
+    </header>
+    <section class="unit-switcher" aria-labelledby="unit-switcher-title">
+      <div class="switcher-heading"><h2 id="unit-switcher-title"><span aria-hidden="true">⇄</span> 操控单位</h2><p id="unit-switcher-hint">点击角色卡，切换操控单位</p></div>
+      <div class="roster" id="roster" aria-label="选择操控单位" aria-describedby="unit-switcher-hint"></div>
+    </section>
+    <main>
+      <section class="battle-column" aria-label="战场">
+        <div class="battle-heading"><div><span id="round-label" class="round">第 1 / 8 回合</span><span id="phase-label" class="phase">我方阶段</span></div><span class="deadline">第8回合结束前撤离</span></div>
+        <div id="event-banner" class="event-banner"><span class="banner-icon">◇</span><span id="event-text">胜利条件：第8回合结束前三名队员全部登艇。</span></div>
+        <div class="board-controls"><span id="remaining-actions">还有3名队员可移动或行动</span><button id="undo-button" class="undo-control" disabled><span aria-hidden="true">↶</span> 撤销上次移动</button><button id="end-turn" class="primary">结束我方回合 <span>→</span></button></div>
+        <div class="map-frame"><div class="map-top-label"><span>入口 / 集结点</span><span id="range-caption">普通移动</span><span>逃生艇 / 撤离区 →</span></div><div class="board-stage"><div id="board" class="board" role="group" aria-label="13列9行船坞方格地图"></div><div id="fx-layer" class="fx-layer" aria-hidden="true"></div></div><div id="activity-bar" class="activity-bar" role="status"><span id="activity-text">当前无行动播放</span><label>动画 <select id="animation-speed" aria-label="动画播放速度"><option value="1">标准</option><option value="2">2倍</option><option value="3">3倍</option></select></label></div></div>
+        <div class="map-footer"><div class="legend"><span><i class="legend-dot ally"></i>我方</span><span><i class="legend-dot enemy"></i>敌方</span><span><i class="legend-dot exit"></i>撤离区</span><span><i class="legend-dot fire"></i>火场</span><span><i class="legend-dot boost"></i>伤害 +2</span><span><i class="legend-dot warning"></i>炮击预告</span><span><i class="legend-dot cast"></i>行动范围</span><span><i class="legend-dot valid"></i>有效目标</span><span><i class="legend-dot splash"></i>溅射范围</span></div><button id="range-button" class="quiet small">显示敌方威胁</button></div>
+      </section>
+      <aside class="side-column">
+        <section class="panel unit-panel"><div class="panel-label">行动面板 <span id="unit-action-state"></span></div><div id="unit-info"></div><div id="action-buttons"></div><div id="action-hint" class="action-hint" aria-live="polite">每回合一次普攻、技能或登艇。</div><div id="preview" class="preview">紫色地格：行动范围；金色边框：有效目标；粉色虚线：火球溅射区域。</div><div class="utility"><button id="wait-button" class="quiet small" disabled>当前队员待机</button></div></section>
+        <section class="panel target-panel"><div class="panel-label">地格 / 目标情报</div><div id="target-info">物理伤害由物防减免，魔法伤害由魔防减免。</div></section>
+        <section class="panel log-panel"><div class="panel-label">行动记录 <button id="export-button" class="text-button">导出记录</button></div><div id="log" class="log" aria-live="polite"></div></section>
+      </aside>
+    </main>
+    <footer class="footer"><span>回合制战斗 · 无随机命中 · 伤害浮动±20% · 移动与行动独立</span><span>三名队员全部登艇即胜利；全灭敌人不直接结束关卡</span></footer>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <dialog id="intro-dialog" class="intro-dialog">
+    <div class="dialog-eyebrow">船坞脱困 / 0.15</div><h2 id="intro-title" tabindex="-1">开始前，了解这几条</h2>
+    <p class="core-objective"><strong>目标：第8回合结束前，三名队员全部登艇。</strong><br>任一队员阵亡，或期限结束仍有人未登艇，即失败。</p>
+    <ol class="core-rules">
+      <li><strong>选择队员，使用技能</strong><p>点击顶部角色卡或棋盘上的友军头像切换操控单位。每人有3个技能，在行动面板中点击技能，再选择目标。</p></li>
+      <li><strong>移动和行动分开计算</strong><p>每人每回合有独立移动力，以及1次普攻、技能或登艇机会。可先攻击再移动，也可移动一部分、放技能、继续移动。</p></li>
+      <li><strong>进入绿区后，还要点击登艇</strong><p>进入绿色撤离区不会自动通关，需消耗一次行动登艇。全灭敌人不直接结束关卡。</p></li>
+      <li><strong>回合交替，环境也会造成伤害</strong><p>点击“结束我方回合”后敌人行动。火场有伤害，第3回合起出现炮击预告。移动、换位和环境细则可随时查阅详细规则。</p></li>
+    </ol>
+    <button id="intro-details-button" class="quiet rules-entry">查看详细规则 →</button>
+    <button id="start-button" class="primary">开始撤离行动 →</button><p class="dialog-footnote">单关原型 · 无随机命中 · 可随时重新开始</p>
+  </dialog>
+  <dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title">
+    <div class="rules-header"><div><div class="dialog-eyebrow">随时查阅 / 不改变战斗状态</div><h2 id="rules-title" tabindex="-1">详细规则</h2></div><button id="rules-close-button" class="quiet">关闭规则</button></div>
+    <div class="rules-body">
+      <section><h3>01 胜利、失败与回合</h3><p>第8回合结束前三名队员全部登艇即胜利。任一队员阵亡，或期限结束仍有人未登艇，即失败。击败全部敌人不会直接结束关卡；清场后全员撤离可获得隐藏成就“清除封锁”。</p><p>我方与敌方阶段交替进行。我方可以自由选择队员的操作顺序；点击“结束我方回合”放弃剩余机会，进入敌方阶段。</p></section>
+      <section><h3>02 选择单位、攻击与技能</h3><p>点击顶部角色卡切换操控单位。除“换位”模式外，点击棋盘上的友军头像也会切换操控单位，不消耗资源。</p><p>每名队员每回合有1次普攻、技能或登艇机会，三者共用；移动独立计算，可以先攻击再移动，也可以分段移动。每人有3个技能：点击行动面板中的技能按钮，再在棋盘选择目标；自身技能也需点击自己的地格空白处确认。</p><p>给友军施放技能时，点击其所在格子的空白处；点击头像仍是切换单位。传送需先选单位，再选有效空格。未确认有效目标不会消耗行动或冷却。</p><p>技能效果在选中按钮后显示，冷却与射程标在按钮上。冷却4回合表示第1回合施放后，第5回合恢复；普通攻击没有冷却。已用完行动、冷却中或已登艇时，对应按钮不可用。</p><p>紫色地格为行动范围，金色边框为有效目标，粉色虚线为火球溅射范围。射程按横纵格数之和计算，远程普攻和技能选取受货箱遮挡限制；传送落点可以跨越货箱。</p></section>
+      <section><h3>03 普通移动、换位与撤销</h3><p>守卫和术师基础移动力为3，游击手为4。普通地格每格消耗1点，火场每格消耗2点；可分段使用。水面、货箱不可进入，敌我不能互换或直接跨越。</p><p>“移动”以空格为终点，可以穿过友军，沿途友军位置不变。“换位”以其他友军头像为终点，沿整段路径依次交换位置；每次交换仅移动者消耗1点移动力，空格路段按地形计费，其他队员的资源不变。敌方同阵营同样可以换位。</p><p>移动或换位前，下方信息栏预览路径、位置变化与消耗。“撤销上次移动”还原最近一次移动以及沿途换位；使用普攻、技能、登艇、待机或结束回合后，不能撤销此前的移动。</p></section>
+      <section><h3>04 登艇与离场</h3><p>只有在绿色撤离区内，且本回合行动尚未使用时，才能点击“登艇撤离”。走入绿区或被传送到绿区不等于登艇。</p><p>已登艇队员离开棋盘，不再占据地格、受伤或参与战斗，也不能继续使用技能。三人都登艇后立即胜利。</p></section>
+      <section><h3>05 伤害、地形与回复</h3><p>物理伤害由物防减免，魔法伤害由魔防减免。站在强化格时伤害+2，敌我均适用。货箱既阻挡移动，也阻挡攻击射线。</p><p>所有伤害在防御、加成及掩护减伤结算后，按80%—120%区间抽取整数，区间四舍五入、最低1点（5→4—6，10→8—12）。普攻、技能、溅射、炮击和火场均适用，预览显示区间而不是固定伤害。治疗不浮动，不超过生命上限，不能复活。</p><p>火场在回合末造成4—6点伤害，敌我双方均受影响。初始火场持续整关；炮击产生的新火场持续3次回合末。</p></section>
+      <section><h3>06 炮击预告与起火时序</h3><p>第3回合起，在未撤离队员所在格及周围2格内随机预告炮击。落点数为未撤离人数+1，上限4；优先随机标记最多两名队员所在格，每人至少保留一个按阶段开始时移动力可达的未标记落点。预告整回合不变。</p><p>本回合敌方行动结束后，每处落点造成6—10点浮动伤害；落点从下回合开始燃烧，持续3次回合末。新火场不在炮击当回合造成伤害。重复炮击从下回合重新计算燃烧时长；原有火场仍正常结算。</p></section>
+      <section><h3>07 敌人、控制与持续效果</h3><p>敌人优先执行本回合移动后能够造成伤害的行动，优先攻击离自己最近的可攻击队员；没有可攻击目标时向最近队员靠近。重甲移动力1，弩手2，追击者4。</p><p>第1回合敌方行动结束后，追击者从2·4、2·5、2·6、3·4、3·5、3·6中的随机空格登场，坐标为列·行；若全部被占用则延后登场。登场潜行持续至下一回合结束：无法被普攻或技能选中，只受环境和溅射伤害；期间首次伤害额外+4。</p><p>冰缚只限制敌人在下次敌方阶段移动，仍可攻击和使用技能。盾击的眩晕让敌人在下次敌方阶段无法移动、普攻或使用技能。其他减速按对应技能说明生效。</p><p>掩护持续至下个我方阶段开始，不限次数承接被保护者的单体攻击及附带效果，按守卫防御结算后减伤45%；不承接环境或火球溅射伤害，守卫离场即失效。坚守再生从施放回合起，连续3次我方回合结束各回复8点生命。</p></section>
+    </div>
+    <div class="rules-footer"><button id="rules-done-button" class="primary">返回 →</button></div>
+  </dialog>
+  <dialog id="confirm-dialog"><h2 id="confirm-title">结束我方回合？</h2><p id="confirm-message"></p><div class="dialog-buttons"><button id="confirm-cancel" class="quiet">返回战场</button><button id="confirm-ok" class="primary">确认</button></div></dialog>
+  <dialog id="result-dialog"><div id="result-eyebrow" class="dialog-eyebrow">任务结算</div><h2 id="result-title"></h2><p id="result-reason"></p><div id="result-stats" class="result-stats"></div><div id="result-details" class="intro-note"></div><div class="dialog-buttons"><button id="result-export" class="quiet">导出本局记录</button><button id="result-restart" class="primary">重新开始 →</button></div></dialog>
+</body>
+</html>
